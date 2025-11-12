@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOpencodeClient } from '@opencode-ai/sdk';
+import { createOpencode } from '@opencode-ai/sdk';
 
-// Initialize OpenCode client (connecting to existing instance or local server)
-const getClient = () => {
-  return createOpencodeClient({
-    baseUrl: process.env.OPENCODE_URL || 'http://localhost:4096'
-  });
-};
+// Global variable to store the OpenCode instance
+let opencodeInstance: Awaited<ReturnType<typeof createOpencode>> | null = null;
+
+// Initialize OpenCode with automatic server startup
+async function getClient() {
+  if (!opencodeInstance) {
+    opencodeInstance = await createOpencode({
+      hostname: process.env.OPENCODE_HOSTNAME || '127.0.0.1',
+      port: process.env.OPENCODE_PORT ? parseInt(process.env.OPENCODE_PORT) : 4096,
+      config: {
+        model: 'free/Big Pickle' // Default model
+      }
+    });
+  }
+  return opencodeInstance.client;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = getClient();
+    const client = await getClient();
 
     // Create a new session
     const sessionResponse = await client.session.create({
