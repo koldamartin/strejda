@@ -17,16 +17,43 @@ export default function Home() {
 
     // Add user message
     const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput('');
     setIsLoading(true);
 
-    // Simulate AI response with dummy "Hello!" message
-    setTimeout(() => {
-      const aiMessage: Message = { role: 'assistant', content: 'Hello!' };
+    try {
+      // Call OpenCode API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: updatedMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+
+      const data = await response.json();
+      const aiMessage: Message = {
+        role: 'assistant',
+        content: data.message || 'No response'
+      };
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -42,8 +69,11 @@ export default function Home() {
         {/* Header */}
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            Simple Chat
+            OpenCode Chat
           </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Powered by Big Pickle
+          </p>
         </div>
 
         {/* Messages Container */}
