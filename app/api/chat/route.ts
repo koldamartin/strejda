@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 // Create the OpenCode client connecting to the existing server
 const client = createOpencodeClient({
   baseUrl: "https://strejda.onrender.com",
-  config: {
-    model: "opencode/big-pickle",
-  },
 });
+
+// Store session ID (in production, this should be per-user)
+let sessionId: string | null = null;
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,12 +20,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send the message to the OpenCode server
-    const response = await client.chat({
-      messages: [{ role: "user", content: message }],
+    // Create session if it doesn't exist
+    if (!sessionId) {
+      const session = await client.session.create({
+        body: {},
+      });
+      sessionId = session.id;
+    }
+
+    // Send the message to the OpenCode server with model specification
+    const response = await client.session.prompt({
+      path: { id: sessionId },
+      body: {
+        model: {
+          providerID: "opencode",
+          modelID: "big-pickle",
+        },
+        parts: [{ type: "text", text: message }],
+      },
     });
 
-    return NextResponse.json({ response: response.content });
+    // Extract text content from response parts
+    const textContent = response.parts
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join("");
+
+    return NextResponse.json({ response: textContent });
   } catch (error) {
     console.error("Error communicating with OpenCode server:", error);
     return NextResponse.json(
