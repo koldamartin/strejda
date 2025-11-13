@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 // Create the OpenCode client connecting to the existing server
 const client = createOpencodeClient({
   baseUrl: "https://strejda.onrender.com",
+  config: {
+    model: "opencode/big-pickle",
+  },
 });
 
 export async function POST(request: NextRequest) {
