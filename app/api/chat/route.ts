@@ -1,84 +1,56 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createOpencode } from '@opencode-ai/sdk';
+import { createOpencodeClient } from "@opencode-ai/sdk";
+import { NextRequest, NextResponse } from "next/server";
 
-// Global variable to store the OpenCode instance
-let opencodeInstance: Awaited<ReturnType<typeof createOpencode>> | null = null;
+// Create the OpenCode client connecting to the existing server
+const client = createOpencodeClient({
+  baseUrl: "https://strejda.onrender.com",
+});
 
-// Initialize OpenCode with automatic server startup
-async function getClient() {
-  if (!opencodeInstance) {
-    opencodeInstance = await createOpencode({
-      hostname: process.env.OPENCODE_HOSTNAME || '127.0.0.1',
-      port: process.env.OPENCODE_PORT ? parseInt(process.env.OPENCODE_PORT) : 4096,
-      config: {
-        model: 'free/Big Pickle' // Default model
-      }
-    });
-  }
-  return opencodeInstance.client;
-}
+// Store session ID (in production, this should be per-user)
+let sessionId: string | null = null;
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages } = await request.json();
+    const { message } = await request.json();
 
-    if (!messages || messages.length === 0) {
+    if (!message) {
       return NextResponse.json(
-        { error: 'No messages provided' },
+        { error: "Message is required" },
         { status: 400 }
       );
     }
 
-    const client = await getClient();
-
-    // Create a new session
-    const sessionResponse = await client.session.create({
-      body: {}
-    });
-
-    if (!sessionResponse.data?.id) {
-      throw new Error('Failed to create session');
+    // Create session if it doesn't exist
+    if (!sessionId) {
+      const session = await client.session.create({
+        body: {},
+      });
+      sessionId = session.id;
     }
 
-    const sessionId = sessionResponse.data.id;
-
-    // Get the last user message
-    const lastMessage = messages[messages.length - 1];
-    const userPrompt = lastMessage.content;
-
-    // Send prompt to OpenCode using Big Pickle model
-    const result = await client.session.prompt({
+    // Send the message to the OpenCode server with model specification
+    const response = await client.session.prompt({
       path: { id: sessionId },
       body: {
         model: {
-          providerID: 'free',
-          modelID: 'Big Pickle'
+          providerID: "opencode",
+          modelID: "big-pickle",
         },
-        parts: [
-          {
-            type: 'text',
-            text: userPrompt
-          }
-        ]
-      }
-    });
-
-    // Extract the response content
-    const parts = result.data?.parts || [];
-    const textPart = parts.find((part: any) => part.type === 'text') as any;
-    const responseContent = textPart?.text || 'No response from agent';
-
-    return NextResponse.json({
-      message: responseContent
-    });
-
-  } catch (error) {
-    console.error('OpenCode API error:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to get response from OpenCode agent',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        parts: [{ type: "text", text: message }],
       },
+    });
+
+    // Extract text content from response parts
+    const textContent = response.parts
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join("");
+
+    return NextResponse.json({ response: textContent });
+  } catch (error) {
+    console.error("Error communicating with OpenCode server:", error);
+    return NextResponse.json(
+      { error: "Failed to communicate with OpenCode server" },
       { status: 500 }
     );
   }

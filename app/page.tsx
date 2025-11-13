@@ -23,32 +23,28 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // Call OpenCode API
+      // Send message to OpenCode API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messages: updatedMessages,
-        }),
+        body: JSON.stringify({ message: input }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        throw new Error(data.error || 'Failed to get response');
       }
 
-      const data = await response.json();
-      const aiMessage: Message = {
-        role: 'assistant',
-        content: data.message || 'No response'
-      };
+      const aiMessage: Message = { role: 'assistant', content: data.response };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error sending message:', error);
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: 'Sorry, there was an error processing your message.'
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
