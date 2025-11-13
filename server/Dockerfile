@@ -27,4 +27,4 @@ RUN addgroup -g 1001 -S opencode && \
 USER opencode
 
 # Start the OpenCode server
-CMD ["/usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64-musl/bin/opencode", "serve", "--port", "${PORT}", "--hostname", "${HOSTNAME}"]
+CMD ["/bin/sh", "-c", "/usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64-musl/bin/opencode serve --port ${PORT} --hostname ${HOSTNAME}"]
