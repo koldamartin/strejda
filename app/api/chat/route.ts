@@ -25,23 +25,26 @@ export async function POST(request: NextRequest) {
       const session = await client.session.create({
         body: {},
       });
-      sessionId = session.id;
+      if (!session.data) {
+        throw new Error("Failed to create session");
+      }
+      sessionId = session.data.id;
     }
 
-    // Send the message to the OpenCode server with model specification
+    // Send the message to the OpenCode server (uses model from server config)
     const response = await client.session.prompt({
       path: { id: sessionId },
       body: {
-        model: {
-          providerID: "opencode",
-          modelID: "big-pickle",
-        },
         parts: [{ type: "text", text: message }],
       },
     });
 
+    if (!response.data) {
+      throw new Error("Failed to get response from server");
+    }
+
     // Extract text content from response parts
-    const textContent = response.parts
+    const textContent = response.data.parts
       .filter((part) => part.type === "text")
       .map((part) => part.text)
       .join("");
