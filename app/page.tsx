@@ -17,7 +17,8 @@ export default function Home() {
 
     // Add user message
     const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput('');
     setIsLoading(true);
 
@@ -64,8 +65,11 @@ export default function Home() {
         {/* Header */}
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            Simple Chat
+            OpenCode Chat
           </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Powered by Big Pickle
+          </p>
         </div>
 
         {/* Messages Container */}
