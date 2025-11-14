@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenCode Chat Application
 
-## Getting Started
+A full-stack chat application powered by OpenCode and Big Pickle, separated into backend and frontend services for independent deployment.
 
-First, run the development server:
+## Architecture
 
+This application is split into three separate services:
+
+### Server: `server/`
+- **Technology**: OpenCode server
+- **Deployment**: Docker container
+- **Purpose**: Core AI chat server that processes messages
+- **Dependencies**: OpenCode server dependencies
+
+### Backend: `opencode-next-api/`
+- **Technology**: Next.js API server
+- **Deployment**: Docker container
+- **Purpose**: Provides `/api/chat` endpoint that proxies requests to the OpenCode server
+- **Dependencies**: `@opencode-ai/sdk`, `next`
+- **Note**: This service makes API calls to the OpenCode server at `https://strejda.onrender.com`
+
+### Frontend: `front-end-ui/`
+- **Technology**: Next.js React application
+- **Deployment**: Netlify (static build)
+- **Purpose**: User interface for chat application
+- **Dependencies**: `next`, `react`, `react-dom`, `tailwindcss`
+
+## Development Setup
+
+### Server Development
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd server
+# Follow the server's README for setup instructions
+# The server should be running at https://strejda.onrender.com or your local instance
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Backend Development
+```bash
+cd opencode-next-api
+npm install
+npm run dev
+```
+The API will be available at `http://localhost:3000/api/chat`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Frontend Development
+```bash
+cd front-end-ui
+npm install
+cp .env.example .env.local
+# Edit .env.local to set NEXT_PUBLIC_API_URL=http://localhost:3000
+npm run dev
+```
+The frontend will be available at `http://localhost:3001`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment
 
-## Learn More
+### Server (Docker)
+```bash
+cd server
+docker-compose up -d
+# Or follow the server's deployment instructions
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Backend (Docker)
+```bash
+cd opencode-next-api
+docker build -t opencode-next-api .
+docker run -p 3000:3000 opencode-next-api
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Frontend (Netlify)
+1. Connect the `front-end-ui` directory to Netlify
+2. Set environment variable `NEXT_PUBLIC_API_URL` to your deployed backend URL
+3. Deploy - Netlify will automatically build and deploy the static site
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment Variables
 
-## Deploy on Vercel
+### Server
+Refer to the server's documentation for required environment variables.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Backend
+No required environment variables for basic functionality.
+- Note: The backend is configured to connect to `https://strejda.onrender.com` by default in `opencode-next-api/app/api/chat/route.ts:6`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Frontend
+- `NEXT_PUBLIC_API_URL`: URL of the deployed backend API (e.g., `https://your-backend-url.com`)
+
+## API Endpoint
+
+### POST /api/chat
+Request body:
+```json
+{
+  "message": "Your message here"
+}
+```
+
+Response:
+```json
+{
+  "response": "AI response here"
+}
+```
+
+## Service Dependencies
+
+**Important**: All three services must be running for the application to work correctly:
+
+1. **Server** - The OpenCode AI server that processes chat messages
+2. **Backend API** - The Next.js API that proxies requests to the server
+3. **Frontend** - The React UI that users interact with
+
+The backend API (`opencode-next-api/app/api/chat/route.ts`) makes HTTP calls to the OpenCode server, so the server must be accessible at the configured URL.
+
+## Original Project Structure
+
+This was originally a single Next.js application that has been separated into three services for better scalability and independent deployment capabilities.

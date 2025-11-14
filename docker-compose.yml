@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # OpenCode Server
+  opencode-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: opencode-server
+    ports:
+      - "${OPENCODE_PORT:-4096}:4096"
+    environment:
+      - PORT=${OPENCODE_PORT:-4096}
+      - HOSTNAME=${OPENCODE_HOSTNAME:-0.0.0.0}
+      - NODE_ENV=${NODE_ENV:-production}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4096/doc"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - strejda-network
+
+  # Next.js API Service
+  opencode-next-api:
+    build:
+      context: ./opencode-next-api
+      dockerfile: Dockerfile
+    container_name: opencode-next-api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      - PORT=${API_PORT:-3000}
+      - HOSTNAME=${API_HOSTNAME:-0.0.0.0}
+      - NODE_ENV=${NODE_ENV:-production}
+      - OPENCODE_URL=http://opencode-server:4096
+    depends_on:
+      opencode-server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/chat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - strejda-network
+
+  # Frontend UI Service (Development Mode)
+  front-end-ui:
+    image: node:20-alpine
+    container_name: front-end-ui
+    working_dir: /app
+    volumes:
+      - ./front-end-ui:/app
+      - /app/node_modules
+    ports:
+      - "${UI_PORT:-3001}:3000"
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://opencode-next-api:3000
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      opencode-next-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - strejda-network
+
+networks:
+  strejda-network:
+    driver: bridge
+
+# Uncomment if you need persistent volumes
+# volumes:
+#   opencode-data:
