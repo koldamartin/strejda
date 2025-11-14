@@ -20,8 +20,8 @@ RUN npm run build
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Prune dev dependencies after build
-RUN npm prune --omit=dev
+# Prune dev dependencies but keep TypeScript
+RUN npm prune --omit=dev && npm install typescript --save-prod
 
 # Set environment variables
 ENV PORT=3000
@@ -31,9 +31,9 @@ ENV NODE_ENV=production
 # Expose the port
 EXPOSE 3000
 
-# Health check to ensure the server is running
+# Health check to ensure both API and backend server are running
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/api/chat || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/api/health || exit 1
 
 # Switch to non-root user
 USER nodejs
