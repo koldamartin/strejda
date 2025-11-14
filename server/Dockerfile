@@ -16,8 +16,8 @@ ENV NODE_ENV=production
 EXPOSE 4096
 
 # Health check to ensure the server is running
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/doc || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=5 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:4096/doc || exit 1
 
 # Create a non-root user for security
 RUN addgroup -g 1001 -S opencode && \

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Create the OpenCode client connecting to the existing server
 const client = createOpencodeClient({
-  baseUrl: "https://strejda.onrender.com",
+  baseUrl: process.env.OPENCODE_URL || "https://strejda.onrender.com",
 });
 
 // Store session ID (in production, this should be per-user)
